@@ -1,0 +1,9 @@
+{
+  "outputPrefix": "parsed_",
+  "splitKeywords": [
+    "IF", "ELSE", "CALL", "DISPLAY", "PERFORM", "END-IF", "ADD", "SUBTRACT",
+    "GOBACK", "MOVE", "EVALUATE", "WHEN", "END-EVALUATE", "ACCEPT", "GO TO",
+    "READ", "WRITE", "INSPECT"
+  ],
+  "excludeDivisions": []
+}
