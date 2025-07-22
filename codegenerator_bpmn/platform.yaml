@@ -1,0 +1,77 @@
+platform:
+  name: acme-enterprise-platform
+  description: >
+    Insurance platform supporting quote, bind, and issue workflows,
+    aligned to central DevOps, Security, and Observability governance.
+
+language: java
+framework: springboot
+database: postgres
+api_protocol: rest
+cloud_provider: aws
+container_runtime: docker
+orchestration: kubernetes
+
+architecture_patterns:
+  - hexagonal-architecture
+  - event-driven-architecture
+  - domain-driven-design
+
+messaging:
+  broker: kafka
+  async_supported: true
+
+ci_cd:
+  tool: github-actions
+  image_registry: ecr
+  deployment_envs:
+    - dev
+    - test
+    - staging
+    - prod
+
+devops_governance:
+  source: https://devops.acme.com/policies
+  version: v3.2
+  enforced_by: central-devops-team
+  dora_metrics:
+    required: true
+    source_of_truth: https://devops.acme.com/policies/observability#dora
+    automated_tracking: true
+    toolchain:
+      - github-actions
+      - datadog
+      - jira
+  observability:
+    required: true
+    stack:
+      metrics: prometheus
+      traces: opentelemetry
+      logs: fluentbit
+      dashboards: grafana
+    alerting: prometheus + alertmanager
+    documentation: https://devops.acme.com/observability
+
+security_governance:
+  source: https://security.acme.com/standards
+  version: v5.1
+  enforced_by: central-security-team
+  authentication:
+    protocol: oauth2
+    provider: keycloak
+  authorization: rbac
+  encryption:
+    in_transit: tls-1.3
+    at_rest: aes-256
+  api_gateway:
+    provider: kong
+    owasp_compliant: true
+  secrets_management: aws-secrets-manager
+  audit_logging: enabled
+  documentation: https://security.acme.com/platform
+
+llm_guidance:
+  auto_inject_metrics: false
+  respect_governance_sources: true
+  validate_with_agent: true
+  compliance_score_tags: [governed, observable, secured]

@@ -1,0 +1,489 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_AIQuoteBind" targetNamespace="http://example.com/bpmn" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.6.1">
+  <bpmn:collaboration id="Collaboration_AIQuoteBind">
+    <bpmn:participant id="Participant_Insurer" name="Insurer" processRef="AI_Agent_QuoteBind_Process" />
+    <bpmn:participant id="Participant_Customer" name="Customer" processRef="Customer_Process" />
+    <bpmn:messageFlow id="MessageFlow_Request" sourceRef="Send_Request" targetRef="StartEvent" />
+    <bpmn:messageFlow id="MessageFlow_Quote" sourceRef="Task_ReturnQuote" targetRef="Receive_Quote" />
+    <bpmn:messageFlow id="MessageFlow_Accept" sourceRef="Send_Accept" targetRef="Receive_Accept" />
+    <bpmn:messageFlow id="MessageFlow_Reject" sourceRef="Send_Reject" targetRef="Receive_Reject" />
+  </bpmn:collaboration>
+  <bpmn:process id="AI_Agent_QuoteBind_Process" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Insurer">
+      <bpmn:lane id="Lane_NotificationAgent" name="NotificationAgent">
+        <bpmn:flowNodeRef>Task_SendConfirmation</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_BindAgent" name="BindAgent">
+        <bpmn:flowNodeRef>Task_BindPolicy</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_PaymentAgent" name="PaymentAgent">
+        <bpmn:flowNodeRef>Task_ProcessPayment</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_HumanUW" name="Human Underwriter">
+        <bpmn:flowNodeRef>Task_HumanUW</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_UnderwritingAgent" name="UnderwritingAgent">
+        <bpmn:flowNodeRef>Task_Underwriting</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Escalate_UW</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_PricingAgent" name="PricingAgent">
+        <bpmn:flowNodeRef>Task_CalculateQuote</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_RiskAgent" name="RiskAgent">
+        <bpmn:flowNodeRef>Task_RiskAssessment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_RiskRetry</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Timeout_Risk</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_QuoteAgent" name="QuoteAgent">
+        <bpmn:flowNodeRef>StartEvent</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_CollectCustomerData</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_SplitAssessment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_JoinAssessment</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Task_ReturnQuote</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_WaitDecision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Receive_Accept</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Receive_Reject</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:dataObject id="DataObj_CustomerInfo" name="Customer Info" />
+    <bpmn:dataObject id="DataObj_RiskAssessment" name="Risk Assessment" />
+    <bpmn:dataObject id="DataObj_Quote" name="Quote" />
+    <bpmn:dataObject id="DataObj_Policy" name="Policy" />
+    <bpmn:startEvent id="StartEvent" name="Customer Request">
+      <bpmn:messageEventDefinition />
+    </bpmn:startEvent>
+    <bpmn:task id="Task_CollectCustomerData" name="Collect Customer &#38; Coverage Info (QuoteAgent)">
+      <bpmn:dataOutputAssociation>
+        <bpmn:targetRef>DataObj_CustomerInfo</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+    <bpmn:parallelGateway id="Gateway_SplitAssessment" name="Parallel Assessments" />
+    <bpmn:task id="Task_RiskAssessment" name="Assess Risk (RiskAgent)">
+      <bpmn:dataInputAssociation>
+        <bpmn:sourceRef>DataObj_CustomerInfo</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation>
+        <bpmn:targetRef>DataObj_RiskAssessment</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+    <bpmn:task id="Task_RiskRetry" name="Retry Risk Assessment" />
+    <bpmn:task id="Task_CalculateQuote" name="Calculate Quote (PricingAgent)">
+      <bpmn:dataInputAssociation>
+        <bpmn:sourceRef>DataObj_CustomerInfo</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation>
+        <bpmn:targetRef>DataObj_Quote</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+    <bpmn:task id="Task_Underwriting" name="Underwrite Policy (UnderwritingAgent)">
+      <bpmn:dataInputAssociation>
+        <bpmn:sourceRef>DataObj_CustomerInfo</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:task>
+    <bpmn:task id="Task_HumanUW" name="Human Underwriter Review" />
+    <bpmn:parallelGateway id="Gateway_JoinAssessment" />
+    <bpmn:task id="Task_ReturnQuote" name="Return Quote to Customer (QuoteAgent)">
+      <bpmn:dataInputAssociation>
+        <bpmn:sourceRef>DataObj_Quote</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:task>
+    <bpmn:eventBasedGateway id="Gateway_WaitDecision" name="Wait for Customer Decision" />
+    <bpmn:intermediateCatchEvent id="Receive_Accept" name="Receive Acceptance">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:intermediateCatchEvent id="Receive_Reject" name="Receive Rejection">
+      <bpmn:messageEventDefinition />
+    </bpmn:intermediateCatchEvent>
+    <bpmn:task id="Task_ProcessPayment" name="Process Payment (PaymentAgent)" />
+    <bpmn:task id="Task_BindPolicy" name="Bind Policy (BindAgent)">
+      <bpmn:dataOutputAssociation>
+        <bpmn:targetRef>DataObj_Policy</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:task>
+    <bpmn:task id="Task_SendConfirmation" name="Send Confirmation (NotificationAgent)">
+      <bpmn:dataInputAssociation>
+        <bpmn:sourceRef>DataObj_Policy</bpmn:sourceRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:task>
+    <bpmn:endEvent id="End_BindComplete" name="Quote Bound" />
+    <bpmn:endEvent id="End_Rejected" name="Quote Rejected" />
+    <bpmn:boundaryEvent id="Escalate_UW" attachedToRef="Task_Underwriting">
+      <bpmn:errorEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:boundaryEvent id="Timeout_Risk" attachedToRef="Task_RiskAssessment">
+      <bpmn:timerEventDefinition />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow1" sourceRef="StartEvent" targetRef="Task_CollectCustomerData" />
+    <bpmn:sequenceFlow id="Flow2" sourceRef="Task_CollectCustomerData" targetRef="Gateway_SplitAssessment" />
+    <bpmn:sequenceFlow id="Flow_Risk" sourceRef="Gateway_SplitAssessment" targetRef="Task_RiskAssessment" />
+    <bpmn:sequenceFlow id="Flow_Pricing" sourceRef="Gateway_SplitAssessment" targetRef="Task_CalculateQuote" />
+    <bpmn:sequenceFlow id="Flow_UW" sourceRef="Gateway_SplitAssessment" targetRef="Task_Underwriting" />
+    <bpmn:sequenceFlow id="Flow_RiskDone" sourceRef="Task_RiskAssessment" targetRef="Gateway_JoinAssessment" />
+    <bpmn:sequenceFlow id="Flow_RiskRetry" sourceRef="Timeout_Risk" targetRef="Task_RiskRetry" />
+    <bpmn:sequenceFlow id="Flow_RiskDoneRetry" sourceRef="Task_RiskRetry" targetRef="Gateway_JoinAssessment" />
+    <bpmn:sequenceFlow id="Flow_PricingDone" sourceRef="Task_CalculateQuote" targetRef="Gateway_JoinAssessment" />
+    <bpmn:sequenceFlow id="Flow_UWDone" sourceRef="Task_Underwriting" targetRef="Gateway_JoinAssessment" />
+    <bpmn:sequenceFlow id="Flow_HumanUW" sourceRef="Escalate_UW" targetRef="Task_HumanUW" />
+    <bpmn:sequenceFlow id="Flow_UWDoneHuman" sourceRef="Task_HumanUW" targetRef="Gateway_JoinAssessment" />
+    <bpmn:sequenceFlow id="Flow3" sourceRef="Gateway_JoinAssessment" targetRef="Task_ReturnQuote" />
+    <bpmn:sequenceFlow id="Flow4" sourceRef="Task_ReturnQuote" targetRef="Gateway_WaitDecision" />
+    <bpmn:sequenceFlow id="Flow_AcceptMsg" sourceRef="Gateway_WaitDecision" targetRef="Receive_Accept" />
+    <bpmn:sequenceFlow id="Flow_RejectMsg" sourceRef="Gateway_WaitDecision" targetRef="Receive_Reject" />
+    <bpmn:sequenceFlow id="Flow5" sourceRef="Receive_Accept" targetRef="Task_ProcessPayment" />
+    <bpmn:sequenceFlow id="FlowReject" sourceRef="Receive_Reject" targetRef="End_Rejected" />
+    <bpmn:sequenceFlow id="FlowPaymentToBind" sourceRef="Task_ProcessPayment" targetRef="Task_BindPolicy" />
+    <bpmn:sequenceFlow id="Flow6" sourceRef="Task_BindPolicy" targetRef="Task_SendConfirmation" />
+    <bpmn:sequenceFlow id="Flow7" sourceRef="Task_SendConfirmation" targetRef="End_BindComplete" />
+  </bpmn:process>
+  <bpmn:process id="Customer_Process" isExecutable="true">
+    <bpmn:laneSet id="LaneSet_Customer">
+      <bpmn:lane id="Lane_HumanCustomer" name="Human Customer">
+        <bpmn:flowNodeRef>Customer_Start</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Send_Request</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Receive_Quote</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Review_Decide</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Customer_Decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Customer_EndReject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Customer_EndAccept</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Send_Accept</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Send_Reject</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:startEvent id="Customer_Start" name="Initiate Request" />
+    <bpmn:sendTask id="Send_Request" name="Send Request" />
+    <bpmn:receiveTask id="Receive_Quote" name="Receive Quote" />
+    <bpmn:userTask id="Review_Decide" name="Review and Decide" />
+    <bpmn:exclusiveGateway id="Customer_Decision" name="Accept?" />
+    <bpmn:endEvent id="Customer_EndReject" name="End" />
+    <bpmn:endEvent id="Customer_EndAccept" name="End" />
+    <bpmn:sendTask id="Send_Accept" name="Send Acceptance" />
+    <bpmn:sendTask id="Send_Reject" name="Send Rejection" />
+    <bpmn:sequenceFlow id="Customer_Flow0" sourceRef="Customer_Start" targetRef="Send_Request" />
+    <bpmn:sequenceFlow id="Customer_Flow1" sourceRef="Send_Request" targetRef="Receive_Quote" />
+    <bpmn:sequenceFlow id="Customer_Flow2" sourceRef="Receive_Quote" targetRef="Review_Decide" />
+    <bpmn:sequenceFlow id="Customer_Flow3" sourceRef="Review_Decide" targetRef="Customer_Decision" />
+    <bpmn:sequenceFlow id="Customer_FlowAccept" name="Yes" sourceRef="Customer_Decision" targetRef="Send_Accept">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{customerAccepts == true}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Customer_FlowReject" name="No" sourceRef="Customer_Decision" targetRef="Send_Reject">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">#{customerAccepts == false}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Customer_FlowEndReject" sourceRef="Send_Reject" targetRef="Customer_EndReject" />
+    <bpmn:sequenceFlow id="Customer_FlowEndAccept" sourceRef="Send_Accept" targetRef="Customer_EndAccept" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_AIQuoteBind">
+    <bpmndi:BPMNPlane id="BPMNPlane_AIQuoteBind" bpmnElement="Collaboration_AIQuoteBind">
+      <bpmndi:BPMNShape id="Participant_Insurer_di" bpmnElement="Participant_Insurer" isHorizontal="true">
+        <dc:Bounds x="160" y="120" width="1200" height="760" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_NotificationAgent_di" bpmnElement="Lane_NotificationAgent" isHorizontal="true">
+        <dc:Bounds x="160" y="680" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_BindAgent_di" bpmnElement="Lane_BindAgent" isHorizontal="true">
+        <dc:Bounds x="160" y="600" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_PaymentAgent_di" bpmnElement="Lane_PaymentAgent" isHorizontal="true">
+        <dc:Bounds x="160" y="520" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_HumanUW_di" bpmnElement="Lane_HumanUW" isHorizontal="true">
+        <dc:Bounds x="160" y="440" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_UnderwritingAgent_di" bpmnElement="Lane_UnderwritingAgent" isHorizontal="true">
+        <dc:Bounds x="160" y="360" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_PricingAgent_di" bpmnElement="Lane_PricingAgent" isHorizontal="true">
+        <dc:Bounds x="160" y="280" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_RiskAgent_di" bpmnElement="Lane_RiskAgent" isHorizontal="true">
+        <dc:Bounds x="160" y="200" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_QuoteAgent_di" bpmnElement="Lane_QuoteAgent" isHorizontal="true">
+        <dc:Bounds x="160" y="120" width="1200" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_di" bpmnElement="StartEvent">
+        <dc:Bounds x="220" y="142" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="213" y="104.5" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CollectCustomerData_di" bpmnElement="Task_CollectCustomerData">
+        <dc:Bounds x="290" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SplitAssessment_di" bpmnElement="Gateway_SplitAssessment" isMarkerVisible="true">
+        <dc:Bounds x="420" y="135" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="412" y="185" width="66" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RiskAssessment_di" bpmnElement="Task_RiskAssessment">
+        <dc:Bounds x="500" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_RiskRetry_di" bpmnElement="Task_RiskRetry">
+        <dc:Bounds x="640" y="200" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_CalculateQuote_di" bpmnElement="Task_CalculateQuote">
+        <dc:Bounds x="500" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_Underwriting_di" bpmnElement="Task_Underwriting">
+        <dc:Bounds x="500" y="360" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_HumanUW_di" bpmnElement="Task_HumanUW">
+        <dc:Bounds x="640" y="440" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_JoinAssessment_di" bpmnElement="Gateway_JoinAssessment" isMarkerVisible="true">
+        <dc:Bounds x="770" y="135" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ReturnQuote_di" bpmnElement="Task_ReturnQuote">
+        <dc:Bounds x="840" y="120" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_WaitDecision_di" bpmnElement="Gateway_WaitDecision" isMarkerVisible="true">
+        <dc:Bounds x="960" y="135" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="941" y="185" width="89" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Receive_Accept_di" bpmnElement="Receive_Accept">
+        <dc:Bounds x="1020" y="120" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1009" y="82.5" width="58" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Receive_Reject_di" bpmnElement="Receive_Reject">
+        <dc:Bounds x="1020" y="180" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="993" y="156" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_ProcessPayment_di" bpmnElement="Task_ProcessPayment">
+        <dc:Bounds x="1080" y="520" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_BindPolicy_di" bpmnElement="Task_BindPolicy">
+        <dc:Bounds x="1190" y="600" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_SendConfirmation_di" bpmnElement="Task_SendConfirmation">
+        <dc:Bounds x="1300" y="680" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_BindComplete_di" bpmnElement="End_BindComplete">
+        <dc:Bounds x="1410" y="702" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1396" y="738" width="65" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_Rejected_di" bpmnElement="End_Rejected">
+        <dc:Bounds x="1080" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1060" y="218" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Escalate_UW_di" bpmnElement="Escalate_UW">
+        <dc:Bounds x="590" y="420" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Timeout_Risk_di" bpmnElement="Timeout_Risk">
+        <dc:Bounds x="590" y="260" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow1_di" bpmnElement="Flow1">
+        <di:waypoint x="256" y="160" />
+        <di:waypoint x="290" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow2_di" bpmnElement="Flow2">
+        <di:waypoint x="390" y="160" />
+        <di:waypoint x="420" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Risk_di" bpmnElement="Flow_Risk">
+        <di:waypoint x="470" y="160" />
+        <di:waypoint x="500" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_Pricing_di" bpmnElement="Flow_Pricing">
+        <di:waypoint x="445" y="185" />
+        <di:waypoint x="500" y="320" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UW_di" bpmnElement="Flow_UW">
+        <di:waypoint x="445" y="185" />
+        <di:waypoint x="445" y="400" />
+        <di:waypoint x="500" y="400" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RiskDone_di" bpmnElement="Flow_RiskDone">
+        <di:waypoint x="600" y="240" />
+        <di:waypoint x="795" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RiskRetry_di" bpmnElement="Flow_RiskRetry">
+        <di:waypoint x="608" y="278" />
+        <di:waypoint x="640" y="240" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RiskDoneRetry_di" bpmnElement="Flow_RiskDoneRetry">
+        <di:waypoint x="740" y="240" />
+        <di:waypoint x="795" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_PricingDone_di" bpmnElement="Flow_PricingDone">
+        <di:waypoint x="600" y="320" />
+        <di:waypoint x="795" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UWDone_di" bpmnElement="Flow_UWDone">
+        <di:waypoint x="600" y="400" />
+        <di:waypoint x="795" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_HumanUW_di" bpmnElement="Flow_HumanUW">
+        <di:waypoint x="608" y="438" />
+        <di:waypoint x="640" y="480" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_UWDoneHuman_di" bpmnElement="Flow_UWDoneHuman">
+        <di:waypoint x="740" y="480" />
+        <di:waypoint x="795" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow3_di" bpmnElement="Flow3">
+        <di:waypoint x="820" y="160" />
+        <di:waypoint x="840" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow4_di" bpmnElement="Flow4">
+        <di:waypoint x="940" y="160" />
+        <di:waypoint x="960" y="160" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_AcceptMsg_di" bpmnElement="Flow_AcceptMsg">
+        <di:waypoint x="1010" y="160" />
+        <di:waypoint x="1038" y="138" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_RejectMsg_di" bpmnElement="Flow_RejectMsg">
+        <di:waypoint x="985" y="185" />
+        <di:waypoint x="1038" y="198" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow5_di" bpmnElement="Flow5">
+        <di:waypoint x="1056" y="138" />
+        <di:waypoint x="1130" y="138" />
+        <di:waypoint x="1130" y="560" />
+        <di:waypoint x="1080" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="FlowReject_di" bpmnElement="FlowReject">
+        <di:waypoint x="1056" y="198" />
+        <di:waypoint x="1098" y="200" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="FlowPaymentToBind_di" bpmnElement="FlowPaymentToBind">
+        <di:waypoint x="1180" y="560" />
+        <di:waypoint x="1240" y="560" />
+        <di:waypoint x="1240" y="640" />
+        <di:waypoint x="1190" y="640" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow6_di" bpmnElement="Flow6">
+        <di:waypoint x="1290" y="640" />
+        <di:waypoint x="1350" y="640" />
+        <di:waypoint x="1350" y="720" />
+        <di:waypoint x="1300" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow7_di" bpmnElement="Flow7">
+        <di:waypoint x="1400" y="720" />
+        <di:waypoint x="1428" y="720" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Participant_Customer_di" bpmnElement="Participant_Customer" isHorizontal="true">
+        <dc:Bounds x="160" y="835" width="1200" height="335" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_HumanCustomer_di" bpmnElement="Lane_HumanCustomer" isHorizontal="true">
+        <dc:Bounds x="160" y="835" width="1200" height="335" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Customer_Start_di" bpmnElement="Customer_Start">
+        <dc:Bounds x="220" y="952" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="200" y="988" width="77" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Send_Request_di" bpmnElement="Send_Request">
+        <dc:Bounds x="290" y="930" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Receive_Quote_di" bpmnElement="Receive_Quote">
+        <dc:Bounds x="420" y="930" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Review_Decide_di" bpmnElement="Review_Decide">
+        <dc:Bounds x="550" y="930" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Customer_Decision_di" bpmnElement="Customer_Decision" isMarkerVisible="true">
+        <dc:Bounds x="680" y="945" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="685" y="995" width="40" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Customer_EndReject_di" bpmnElement="Customer_EndReject">
+        <dc:Bounds x="1192" y="1092" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1200" y="1068" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Customer_EndAccept_di" bpmnElement="Customer_EndAccept">
+        <dc:Bounds x="1192" y="917" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1200" y="953" width="20" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Send_Accept_di" bpmnElement="Send_Accept">
+        <dc:Bounds x="890" y="880" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Send_Reject_di" bpmnElement="Send_Reject">
+        <dc:Bounds x="890" y="1070" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Customer_Flow0_di" bpmnElement="Customer_Flow0">
+        <di:waypoint x="256" y="970" />
+        <di:waypoint x="290" y="970" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Customer_Flow1_di" bpmnElement="Customer_Flow1">
+        <di:waypoint x="390" y="970" />
+        <di:waypoint x="420" y="970" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Customer_Flow2_di" bpmnElement="Customer_Flow2">
+        <di:waypoint x="520" y="970" />
+        <di:waypoint x="550" y="970" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Customer_Flow3_di" bpmnElement="Customer_Flow3">
+        <di:waypoint x="650" y="970" />
+        <di:waypoint x="680" y="970" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Customer_FlowAccept_di" bpmnElement="Customer_FlowAccept">
+        <di:waypoint x="730" y="970" />
+        <di:waypoint x="835" y="970" />
+        <di:waypoint x="835" y="920" />
+        <di:waypoint x="890" y="920" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="718" y="946" width="18" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Customer_FlowReject_di" bpmnElement="Customer_FlowReject">
+        <di:waypoint x="705" y="995" />
+        <di:waypoint x="830" y="995" />
+        <di:waypoint x="830" y="1110" />
+        <di:waypoint x="890" y="1110" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="833" y="1096" width="15" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Customer_FlowEndAccept_di" bpmnElement="Customer_FlowEndAccept">
+        <di:waypoint x="990" y="920" />
+        <di:waypoint x="1091" y="920" />
+        <di:waypoint x="1091" y="935" />
+        <di:waypoint x="1192" y="935" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Customer_FlowEndReject_di" bpmnElement="Customer_FlowEndReject">
+        <di:waypoint x="990" y="1110" />
+        <di:waypoint x="1192" y="1110" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_Request_di" bpmnElement="MessageFlow_Request">
+        <di:waypoint x="345" y="930" />
+        <di:waypoint x="345" y="647" />
+        <di:waypoint x="238" y="647" />
+        <di:waypoint x="238" y="178" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_Quote_di" bpmnElement="MessageFlow_Quote">
+        <di:waypoint x="912" y="200" />
+        <di:waypoint x="912" y="658" />
+        <di:waypoint x="448" y="658" />
+        <di:waypoint x="448" y="930" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_Accept_di" bpmnElement="MessageFlow_Accept">
+        <di:waypoint x="940" y="880" />
+        <di:waypoint x="940" y="526" />
+        <di:waypoint x="1038" y="526" />
+        <di:waypoint x="1038" y="156" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="MessageFlow_Reject_di" bpmnElement="MessageFlow_Reject">
+        <di:waypoint x="990" y="1110" />
+        <di:waypoint x="1038" y="1110" />
+        <di:waypoint x="1038" y="216" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
